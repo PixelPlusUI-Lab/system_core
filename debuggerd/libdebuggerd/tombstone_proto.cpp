@@ -631,6 +631,18 @@ void engrave_tombstone_proto(Tombstone* tombstone, unwindstack::Unwinder* unwind
                           error.c_str());
   }
 
+  struct sysinfo si;
+  sysinfo(&si);
+  android::procinfo::ProcessInfo proc_info;
+  std::string error;
+  if (android::procinfo::GetProcessInfo(main_thread.pid, &proc_info, &error)) {
+    uint64_t starttime = proc_info.starttime / sysconf(_SC_CLK_TCK);
+    result.set_process_uptime(si.uptime - starttime);
+  } else {
+    async_safe_format_log(ANDROID_LOG_ERROR, LOG_TAG, "failed to read process info: %s",
+                          error.c_str());
+  }
+
   auto cmd_line = result.mutable_command_line();
   for (const auto& arg : main_thread.command_line) {
     *cmd_line->Add() = arg;
